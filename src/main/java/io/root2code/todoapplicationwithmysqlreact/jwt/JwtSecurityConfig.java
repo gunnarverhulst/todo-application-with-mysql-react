@@ -31,15 +31,25 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import javax.sql.DataSource;
 import static org.springframework.security.config.Customizer.withDefaults;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class JwtSecurityConfig {
+    
+    private DataSource dataSource;
+
+    public JwtSecurityConfig(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+    
+    
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, HandlerMappingIntrospector introspector) throws Exception {
@@ -79,44 +89,47 @@ public class JwtSecurityConfig {
             UserDetailsService userDetailsService) {
         var authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(authenticationProvider);
     }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("Gunz")
-                                .password("{noop}abc")
-                                .authorities("read")
-                                .roles("USER")
-                                .build();
-
-        return new InMemoryUserDetailsManager(user);
-    }
-    
 //    @Bean
-//    public UserDetailsService userDetailsService(DataSource dataSource) {
-//        var  user = User.withUsername("Gunz")
-//                //.password("{noop}abc")
-//                .password("abc")
-//                .passwordEncoder(str -> passwordEncoder().encode(str))
-//                .authorities("read")
-//                .roles(LoginRoles.USER.toString())
-//                .build();
+//    public UserDetailsService userDetailsService() {
+//        UserDetails user = User.withUsername("Gunz")
+//                                .password("{noop}abc")
+//                                .authorities("read")
+//                                .roles("USER")
+//                                .build();
 //
-//        var  admin = User.withUsername("admin")
-//                //.password("{noop}abc")
-//                .password("abc")
-//                .passwordEncoder(str -> passwordEncoder().encode(str))
-//                .authorities("read")
-//                .roles(LoginRoles.ADMIN.toString(), LoginRoles.USER.toString())
-//                .build();
-//
-//        var  jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
-//        jdbcUserDetailsManager.createUser(user);
-//        jdbcUserDetailsManager.createUser(admin);
-//
-//        return jdbcUserDetailsManager;
+//        return new InMemoryUserDetailsManager(user);
 //    }
+    
+    @Bean
+    public UserDetailsService userDetailsService(DataSource dataSource) {
+        var  vince = User.withUsername("Vince")
+                //.password("{noop}abc")
+                .password("bcd")
+                .passwordEncoder(str -> passwordEncoder().encode(str))
+                .authorities("read")
+                .roles(LoginRoles.USER.toString())
+                .build();
+
+        var  lex = User.withUsername("Lex")
+                //.password("{noop}abc")
+                .password("cde")
+                .passwordEncoder(str -> passwordEncoder().encode(str))
+                .authorities("read")
+                .roles(LoginRoles.USER.toString(), LoginRoles.USER.toString())
+                .build();
+
+        var  jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+        
+//        jdbcUserDetailsManager.createUser(vince);
+//        jdbcUserDetailsManager.createUser(lex);
+//        System.out.println(jdbcUserDetailsManager.getUsersByUsernameQuery());
+
+        return jdbcUserDetailsManager;
+    }
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
@@ -159,6 +172,11 @@ public class JwtSecurityConfig {
             throw new IllegalStateException(
                     "Unable to generate an RSA Key Pair", e);
         }
+    }
+    
+    @Bean
+    public PasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder();
     }
     
 }

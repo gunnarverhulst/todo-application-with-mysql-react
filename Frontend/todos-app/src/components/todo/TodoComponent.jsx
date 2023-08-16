@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { retrieveTodoApi, updateTodoApi, addTodoApi } from "./api/TodoApiService"
 import { useAuth } from "./security/AuthContext"
 import { useEffect, useState } from "react"
-import { Field, Formik,Form, ErrorMessage } from "formik"
+import { Field, Formik, Form, ErrorMessage } from "formik"
 import moment from 'moment'
 
 
@@ -17,6 +17,7 @@ export default function TodoComponent() {
     const [description, setDescription] = useState(null)
     const [creationDate, setCreationDate] = useState(null)
     const [targetDate, setTargetDate] = useState(null)
+    const [isCompleted, setIsCompleted] = useState(false)
 
     useEffect(() => {
         retrieveTodos()
@@ -24,38 +25,38 @@ export default function TodoComponent() {
 
     function retrieveTodos() {
 
-        if(id !== -1){
+        if (id !== -1) {
             retrieveTodoApi(authContext.username, id)
-            .then(response => {
-                setDescription(response.data.description)
-                setCreationDate(response.data.creationDate)
-                setTargetDate(response.data.targetDate)
-            })
-            .catch(error => console.log(error))
-            .finally(console.log('cleanup'))
+                .then(response => {
+                    setDescription(response.data.description)
+                    setCreationDate(response.data.creationDate)
+                    setTargetDate(response.data.targetDate)
+                    setIsCompleted(response.data.isCompleted)
+                })
+                .catch(error => console.log(error))
+                .finally(console.log('cleanup'))
         }
-        
+
     }
 
-    function onSubmit(values){
+    function onSubmit(values) {
         console.log(targetDate)
         const todo = {
             id: id,
             username: authContext.username,
             description: values.description,
             //creationDate: today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate(),
-            targetDate: values.targetDate
+            targetDate: values.targetDate,
+            isCompleted: values.isCompleted
         }
-        
-        console.log(todo.creationDate)
-        
-        if(id === -1){
+
+        if (id === -1) {
             addTodoApi(authContext.username, todo)
-            .then(response => {
-                console.log(response)
-                navigate('/todos')
-            })
-            .catch(error => console.log(error))
+                .then(response => {
+                    console.log(response)
+                    navigate('/todos')
+                })
+                .catch(error => console.log(error))
         } else {
             updateTodoApi(authContext.username, id, todo)
                 .then(response => {
@@ -64,14 +65,14 @@ export default function TodoComponent() {
                 })
                 .catch(error => console.log(error))
         }
-        
+
 
     }
 
-    function validate(values){
+    function validate(values) {
         let errors = {}
 
-        if(values.description.length < 5 || values.description.length === null){
+        if (values.description.length < 5 || values.description.length === null) {
             errors.description = 'Enter a valid description'
         }
 
@@ -86,8 +87,8 @@ export default function TodoComponent() {
         <div className="container">
             <h1>Enter todo Details</h1>
             <div>
-                <Formik initialValues={ { description, targetDate } } 
-                    enableReinitialize={true} 
+                <Formik initialValues={{ description, targetDate, isCompleted }}
+                    enableReinitialize={true}
                     onSubmit={onSubmit}
                     validate={validate}
                     validateOnChange={false}
@@ -95,25 +96,30 @@ export default function TodoComponent() {
                     {
                         (props) => (
                             <Form>
-                                <ErrorMessage 
-                                name='description'
-                                component='div'
-                                className="alert alert-warning" />
+                                <ErrorMessage
+                                    name='description'
+                                    component='div'
+                                    className="alert alert-warning" />
 
-                                <ErrorMessage 
-                                name='targetDate'
-                                component='div'
-                                className="alert alert-warning" />
+                                <ErrorMessage
+                                    name='targetDate'
+                                    component='div'
+                                    className="alert alert-warning" />
 
                                 <fieldset className="form-group">
                                     <label>Description</label>
-                                    <Field type="text" className='form-control' name='description'/>
+                                    <Field type="text" className='form-control' name='description' />
                                 </fieldset>
 
                                 <fieldset className="form-group">
                                     <label>Target Date</label>
-                                    <Field type="date" className='form-control' name='targetDate'/>
+                                    <Field type="date" className='form-control' name='targetDate' />
                                 </fieldset>
+                                {(id > 0) && 
+                                <fieldset>
+                                    <label>Done</label>
+                                    <Field type="checkbox" name="isCompleted" />
+                                </fieldset>}
 
                                 <div>
                                     <button className="btn btn-success m-5" type='submit' >Save</button>
